@@ -1,0 +1,14 @@
+
+html,
+body {
+    height: 100%;
+}
+
+.main-div {
+    min-height: 50%;
+}
+
+/*.row {*/
+    /*padding-top: 15px;*/
+    /*padding-bottom: 15px;*/
+/*}*/

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container h-100">
+        <div class="row justify-content-center my-4">
+            <div class="col col-md-12">
+                <h2>Practice Sessions</h2>
+            </div>
+        </div>
+        <div class="row justify-content-center py-4">
+            <div class="col col-md-12">
+                <table class="table table-hover">
+                    <thead class="thead-dark">
+                    <tr>
+                        <th style="width: 33.33%" class="col">Start</th>
+                        <th style="width: 33.33%" class="col">Stop</th>
+                        <th style="width: 33.33%" class="col">Total Time</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for practice_session in practice_sessions %}
+                        <tr class="practice-session-row" data-id="{{ practice_session.id }}">
+                            <td style="width: 33.33%" class="practice-session-start"
+                                data-start="{{ practice_session.start }}"></td>
+                            <td style="width: 33.33%" class="practice-session-stop"
+                                data-stop="{{ practice_session.stop|default(0,true) }}"></td>
+                            <td style="width: 33.33%" class="practice-session-diff"></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script type="application/javascript" src="/static/js/all_sessions.js"></script>
+{% endblock %}

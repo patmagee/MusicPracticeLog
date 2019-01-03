@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container h-100">
+        <div class="row main-div align-items-center justify-content-center">
+            <div class="col col-md-5">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-title">
+                            <h5>Welcome to the Music Practice Log!</h5>
+                        </div>
+                        This is a simple app made for the express purpose of keeping track of your musical practice sessions.
+                        The app will track each session and allow you add key information that will help you at a later date!
+                        To start, click the login button below!
+                        <div class="row text-center">
+                            <div class="col mt-4">
+                                <a role="button" href="{{ signinurl }}" type="submit" class="btn btn-primary">Login</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

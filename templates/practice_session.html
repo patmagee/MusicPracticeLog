@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container h-100">
+        <div class="row justify-content-center my-4">
+            <div class="col text-center col-md-4">
+                <h1 id="sessiontime"></h1>
+            </div>
+        </div>
+        <div class="row justify-content-center my-4">
+            <div class="col col-md-10">
+                <div class="card" style="min-width: 100%">
+                    <div class="card-body">
+                        <form action="javascript:void(0);">
+                            <div class="row">
+                                <div class="col" id="alert-center"></div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="session-start" class="col-md-2 col-form-label">Start Time</label>
+                                <div class="col-md-4">
+                                    <input value="{{ practice_session.start }}" type="text" readonly
+                                           class="form-control" id="session-start">
+                                </div>
+
+                                <label for="session-stop" class="col-md-2 col-form-label">Stop Time</label>
+                                <div class="col-md-4">
+                                    <input value="{{ practice_session.stop | default(0,True) }}" type="text"
+                                           readonly
+                                           class="form-control" id="session-stop">
+                                </div>
+                            </div>
+                            <div class="form-group row my-5">
+
+                                <div class="col-md-10 offset-md-2">
+                                    <button type="button" id="warm-up"
+                                            data-toggle="button"
+                                            {% if practice_session.warmed_up %}
+                                            class="btn btn-outline-dark active"
+                                            aria-pressed="true"
+                                            {% else %}
+                                            class="btn btn-outline-dark"
+                                            aria-pressed="false"
+                                            {% endif %}>
+                                        Warm Up Complete
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group row mb-5">
+                                <div class="col-md-2">
+                                    <label for="songs" class="col-form-label">Songs</label>
+                                </div>
+                                <div class="col-md-10">
+                                    <div class="row">
+                                        <div class="col input-group mb-4">
+                                            <input id="add-song" type="text" class="form-control"
+                                                   placeholder="Song Name"
+                                                   aria-label="Song Name">
+                                            <div class="input-group-append">
+                                                <button id="add-song-button" class="btn btn-outline-secondary"
+                                                        type="button">+
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+
+                                            <ul class="list-group" id="song-list">
+                                                {% for song in practice_session.songs %}
+                                                    <li class="list-group-item">{{ song }}</li>
+                                                {% endfor %}
+                                            </ul>
+
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                            <div class="form-group row mb-3">
+                                <label for="session-notes" class="col-sm-2">Notes</label>
+                                <div class="col-sm-10">
+                                    <textarea
+                                            class="form-control"
+                                            id="session-notes">{{ practice_session.notes | default("",True) }}</textarea>
+                                </div>
+                            </div>
+                            <button type="button" id="session-update"
+                                    class="btn float-right btn-success">
+                                Update
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="application/javascript" src="/static/js/practice_session.js"></script>
+{% endblock %}

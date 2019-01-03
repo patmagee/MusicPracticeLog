@@ -1,0 +1,6 @@
+indexes:
+  - kind: PracticeSession
+    ancestor: yes
+    properties:
+      - name: start
+        direction: desc
