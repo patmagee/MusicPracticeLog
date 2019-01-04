@@ -4,3 +4,8 @@ indexes:
     properties:
       - name: start
         direction: desc
+  - kind: PracticeSession
+    ancestor: yes
+    properties:
+      - name: stop
+        direction: desc

@@ -25,9 +25,16 @@ class PracticeSession(ndb.Model):
         return _dict
 
 
-def get_practice_sessions(userId):
+def get_practice_sessions(userId, start=None, stop=None):
     user_key = get_user_key(userId)
-    return PracticeSession.query(ancestor=user_key).order(-PracticeSession.start).fetch()
+    query = PracticeSession.query(ancestor=user_key)
+    if start:
+        start = int(start)
+        query.filter(PracticeSession.start >= start)
+    if stop:
+        stop = int(stop)
+        query.filter(PracticeSession.stop < stop)
+    return query.order(-PracticeSession.start).fetch()
 
 
 def get_latest_practice_session(userId):
@@ -74,3 +81,12 @@ def update_practice_session(data_update, practice_session):
     practice_session.put()
 
     return practice_session
+
+
+def delete_practice_session(userId, key):
+    practice_session = get_practice_session(userId, key);
+    if practice_session:
+        session_key = ndb.Key(urlsafe=key)
+        session_key.delete()
+        return True
+    return False

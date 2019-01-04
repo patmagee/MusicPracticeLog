@@ -31,13 +31,16 @@
             var startTime = parseInt(startCol.data("start"));
             var stopTime = parseInt(stopCol.data("stop"));
 
-            var startDate = new Date(startTime);
-            startCol.text(startDate.toLocaleString());
+            var startDate = moment(startTime)
+            startCol.text(startDate.format("LLLL"));
 
             if (stopTime > 0) {
-                var stopDate = new Date(stopTime);
-                stopCol.text(stopDate.toLocaleString());
-                diffCol.text(get_diff(startTime, stopTime));
+                var stopDate = moment(stopTime);
+                stopCol.text(stopDate.format("LLLL"));
+                var ms = stopDate.diff(startDate);
+                var d = moment.duration(ms);
+                var s = Math.floor(d.asHours()) + moment.utc(ms).format(":mm:ss");
+                diffCol.text(s);
             }
         });
     };

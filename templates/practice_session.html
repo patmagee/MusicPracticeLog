@@ -1,99 +1,178 @@
 {% extends "base.html" %}
 {% block content %}
     <div class="container h-100">
-        <div class="row justify-content-center my-4">
-            <div class="col text-center col-md-4">
-                <h1 id="sessiontime"></h1>
-            </div>
-        </div>
-        <div class="row justify-content-center my-4">
-            <div class="col col-md-10">
-                <div class="card" style="min-width: 100%">
-                    <div class="card-body">
-                        <form action="javascript:void(0);">
-                            <div class="row">
-                                <div class="col" id="alert-center"></div>
-                            </div>
-                            <div class="form-group row">
-                                <label for="session-start" class="col-md-2 col-form-label">Start Time</label>
-                                <div class="col-md-4">
-                                    <input value="{{ practice_session.start }}" type="text" readonly
-                                           class="form-control" id="session-start">
-                                </div>
-
-                                <label for="session-stop" class="col-md-2 col-form-label">Stop Time</label>
-                                <div class="col-md-4">
-                                    <input value="{{ practice_session.stop | default(0,True) }}" type="text"
-                                           readonly
-                                           class="form-control" id="session-stop">
-                                </div>
-                            </div>
-                            <div class="form-group row my-5">
-
-                                <div class="col-md-10 offset-md-2">
-                                    <button type="button" id="warm-up"
-                                            data-toggle="button"
-                                            {% if practice_session.warmed_up %}
-                                            class="btn btn-outline-dark active"
-                                            aria-pressed="true"
-                                            {% else %}
-                                            class="btn btn-outline-dark"
-                                            aria-pressed="false"
-                                            {% endif %}>
-                                        Warm Up Complete
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="form-group row mb-5">
-                                <div class="col-md-2">
-                                    <label for="songs" class="col-form-label">Songs</label>
-                                </div>
-                                <div class="col-md-10">
+        <div id="data-row" data-state="{{ state }}"></div>
+        <div style="margin-top: 10%;" class="row align-items-center">
+            <div class="col-12">
+                {% if state == "update" %}
+                    <div class="row justify-content-center my-4">
+                        <div class="col text-center col-md-4">
+                            <h1 id="sessiontime"></h1>
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="row justify-content-center my-4">
+                    <div class="col col-md-10">
+                        <div class="card" style="min-width: 100%">
+                            <div class="card-body">
+                                <form action="javascript:void(0);">
                                     <div class="row">
-                                        <div class="col input-group mb-4">
-                                            <input id="add-song" type="text" class="form-control"
-                                                   placeholder="Song Name"
-                                                   aria-label="Song Name">
-                                            <div class="input-group-append">
-                                                <button id="add-song-button" class="btn btn-outline-secondary"
-                                                        type="button">+
-                                                </button>
+                                        <div class="col" id="alert-center"></div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="session-start" class="col-md-2 col-form-label">Start Time</label>
+                                        <div class="col-md-4">
+                                            <div class="input-group date" id="session-start-picker"
+                                                 data-target-input="nearest">
+                                                <input {% if practice_session %}data-start="{{ practice_session.start | default(true,0) }}"
+                                                       {% endif %} id="session-start"
+                                                       type="text"
+                                                       class="form-control datetimepicker-input"
+                                                       data-target="mt-5 #session-start-picker"/>
+                                                <div class="input-group-append" data-target="#session-start-picker"
+                                                     data-toggle="datetimepicker">
+                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <label for="session-stop" class="col-md-2 col-form-label">Stop Time</label>
+                                        <div class="col-md-4">
+                                            <div class="input-group date" id="session-stop-picker"
+                                                 data-target-input="nearest">
+                                                <input {% if practice_session %}data-stop="{{ practice_session.stop | default(true,0) }}"
+                                                       {% endif %} id="session-stop" type="text"
+                                                       class="form-control datetimepicker-input"
+                                                       data-target="#session-stop-picker"/>
+                                                <div class="input-group-append" data-target="#session-stop-picker"
+                                                     data-toggle="datetimepicker">
+                                                    <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="row">
-                                        <div class="col">
+                                    <div class="form-group row my-5">
 
-                                            <ul class="list-group" id="song-list">
-                                                {% for song in practice_session.songs %}
-                                                    <li class="list-group-item">{{ song }}</li>
-                                                {% endfor %}
-                                            </ul>
-
+                                        <div class="col-md-10 offset-md-2">
+                                            <button type="button" id="warm-up"
+                                                    data-toggle="button"
+                                                    {% if practice_session and practice_session.warmed_up %}
+                                                    class="btn btn-outline-dark active"
+                                                    aria-pressed="true"
+                                                    {% else %}
+                                                    class="btn btn-outline-dark"
+                                                    aria-pressed="false"
+                                                    {% endif %}>
+                                                Warm Up Complete
+                                            </button>
                                         </div>
                                     </div>
+                                    <div class="form-group row mb-5">
+                                        <div class="col-md-2">
+                                            <label for="songs" class="col-form-label">Songs</label>
+                                        </div>
+                                        <div class="col-md-10">
+                                            <div class="row">
+                                                <div class="col input-group mb-4">
+                                                    <input id="add-song" type="text" class="form-control"
+                                                           placeholder="Song Name"
+                                                           aria-label="Song Name">
+                                                    <div class="input-group-append">
+                                                        <button id="add-song-button" class="btn btn-outline-secondary"
+                                                                type="button"><span><i class="fas fa-plus"></i></span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col">
 
-                                </div>
-
-                            </div>
-                            <div class="form-group row mb-3">
-                                <label for="session-notes" class="col-sm-2">Notes</label>
-                                <div class="col-sm-10">
+                                                    <ul class="list-group" id="song-list">
+                                                        {% if practice_session %}
+                                                            {% for song in practice_session.songs %}
+                                                                <li class="list-group-item ">
+                                                                    {{ song }}
+                                                                    <span style="float:right"><a class="delete-song"
+                                                                                                 href="#"><i
+                                                                            class="fas fa-times"></i></a></span>
+                                                                </li>
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row mb-3">
+                                        <label for="session-notes" class="col-sm-2">Notes</label>
+                                        <div class="col-sm-10">
                                     <textarea
                                             class="form-control"
-                                            id="session-notes">{{ practice_session.notes | default("",True) }}</textarea>
-                                </div>
-                            </div>
-                            <button type="button" id="session-update"
-                                    class="btn float-right btn-success">
-                                Update
-                            </button>
-                        </form>
-                    </div>
+                                            id="session-notes">{% if practice_session %}
+                                        {{ practice_session.notes | default("",True) }}{% endif %}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class=" offset-md-6 col-12 col-md-6 text-right">
+                                            {% if state == "update" %}
 
+                                                <button type="button" id="session-update"
+                                                        class="btn btn-success">
+                                                    Update
+                                                </button>
+                                                <button type="button" id="session-cancel"
+                                                        class="btn btn-warning">
+                                                    Cancel
+                                                </button>
+                                                <button type="button" class="btn btn-danger" data-toggle="modal"
+                                                        data-target="#delete-modal">
+                                                    Delete
+                                                </button>
+                                                <div class="modal fade" id="delete-modal" tabindex="-1" role="dialog"
+                                                     aria-labelledby="delete-modal-label"
+                                                     aria-hidden="true">
+                                                    <div class="modal-dialog" role="document">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="delete-modal-label">Confirm
+                                                                    Action</h5>
+                                                                <button type="button" class="close" data-dismiss="modal"
+                                                                        aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                </button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                Are you sure you want to delete this practice session?
+                                                                Once a practice session is deleted it cannot be
+                                                                retrieved
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary"
+                                                                        data-dismiss="modal">Close
+                                                                </button>
+                                                                <button type="button" class="btn btn-danger"
+                                                                        id="session-delete">Delete
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% else %}
+
+                                                <button type="button" id="session-create"
+                                                        class="btn float-right btn-success">
+                                                    Submit
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
-    <script type="application/javascript" src="/static/js/practice_session.js"></script>
 {% endblock %}
