@@ -30,10 +30,10 @@ def get_practice_sessions(userId, start=None, stop=None):
     query = PracticeSession.query(ancestor=user_key)
     if start:
         start = int(start)
-        query.filter(PracticeSession.start >= start)
+        query = query.filter(PracticeSession.start >= start)
     if stop:
         stop = int(stop)
-        query.filter(PracticeSession.stop < stop)
+        query = query.filter(PracticeSession.start < stop)
     return query.order(-PracticeSession.start).fetch()
 
 

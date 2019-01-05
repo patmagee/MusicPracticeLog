@@ -82,6 +82,19 @@
     };
 
     const pageHandlers = function () {
+
+
+        $("#today").on('change', function () {
+            hold = true;
+            updateDatesOnButtonClick('day');
+            getData()
+                .then(function (result) {
+                    updateChart(result);
+                    hold = false;
+                });
+        });
+
+
         $("#this-week").on('change', function () {
             hold = true;
             updateDatesOnButtonClick('week');
@@ -142,7 +155,10 @@
 
         var diff = moment.duration(results.stopMoment.diff(results.startMoment)).abs();
 
-        if (diff.asDays() <= 31) {
+        if (diff.asHours() <= 48) {
+            updateChartHoursAsScale(results)
+        }
+        else if (diff.asDays() <= 93) {
             updateChartDaysAsScale(results);
         } else {
             updateChartMonthsAsScale(results);
@@ -151,42 +167,6 @@
     };
 
     const updateChartDaysAsScale = function (results) {
-        const FORMAT = "dddd MMM DD YY"
-        var labels = [];
-        labelDataPairs = {};
-        labels = [];
-        data = [];
-        day = results.startMoment;
-
-        while (day.isSameOrBefore(results.stopMoment, 'day')) {
-            var key = day.format(FORMAT);
-            labels.push(key);
-            labelDataPairs[key] = {day: day.clone(), total: 0};
-            day.add(1, "days")
-        }
-
-
-        sessions = results.results;
-
-        if (sessions && sessions.length > 0) {
-            for (i = 0; i < sessions.length; i++) {
-                session = sessions[i];
-                var start = moment(session.start);
-                labelDataPairs[start.format(FORMAT)].total += session.stop - session.start
-            }
-        }
-
-
-        for (j = 0; j < labels.length; j++) {
-            label = labels[j];
-            data.push(moment.duration(labelDataPairs[label].total).abs().asHours());
-        }
-
-        return buildChart(labels, data);
-    };
-
-
-    const updateChartWeeksAsScale = function (results) {
         const FORMAT = "dddd MMM DD YY"
         var labels = [];
         var labelDataPairs = {};
@@ -206,10 +186,91 @@
 
         if (sessions && sessions.length > 0) {
             for (i = 0; i < sessions.length; i++) {
-                session = sessions[i];
-                var start = moment(session.start);
-                labelDataPairs[start.format(FORMAT)].total += session.stop - session.start
+                var session = sessions[i];
+                if (session.start && session.stop) {
+                    var endOfDay = moment(session.start).endOf("day");
+                    var start = moment(session.start);
+                    var stop = moment(session.stop);
+
+                    do {
+                        var propName = start.format(FORMAT);
+                        if (labelDataPairs.hasOwnProperty(propName)) {
+                            if (endOfDay.isBefore(stop)) {
+                                labelDataPairs[start.format(FORMAT)].total += Math.abs(endOfDay.diff(start));
+                                start.add(1, 'day').startOf('day');
+                                endOfDay = start.clone().endOf("day");
+                            } else {
+                                labelDataPairs[start.format(FORMAT)].total += Math.abs(stop.diff(start));
+                            }
+                        } else {
+                            start.add(1, 'day').startOf('day');
+                            endOfDay = start.clone().endOf("day");
+                        }
+                    } while (stop.isAfter(endOfDay));
+                }
             }
+        }
+
+
+        for (j = 0; j < labels.length; j++) {
+            var label = labels[j];
+            data.push(moment.duration(labelDataPairs[label].total).abs().asHours());
+        }
+
+        return buildChart(labels, data);
+    };
+
+
+    const updateChartHoursAsScale = function (results) {
+        const FORMAT = "ddd DD HH:MM:SS"
+        var labels = [];
+        var labelDataPairs = {};
+        var labels = [];
+        var data = [];
+        var hour = results.startMoment;
+
+        while (hour.isSameOrBefore(results.stopMoment, 'hour')) {
+            console.log("Here");
+            var key = hour.format(FORMAT);
+            labels.push(key);
+            labelDataPairs[key] = {hour: hour.clone(), total: 0};
+            hour.add(1, "hour")
+        }
+
+
+        var sessions = results.results;
+
+        if (sessions && sessions.length > 0) {
+            for (i = 0; i < sessions.length; i++) {
+                var session = sessions[i];
+                var stackguard = 0;
+                if (session.start && session.stop) {
+                    var endOfHour = moment(session.start).endOf("hour");
+                    var start = moment(session.start);
+                    var stop = moment(session.stop);
+                    do {
+                        if (stackguard > 100) {
+                            break;
+                        }
+                        stackguard += 1;
+                        console.log(stackguard);
+                        var propName = start.format(FORMAT);
+                        if (labelDataPairs.hasOwnProperty(propName)) {
+                            if (endOfHour.isBefore(stop)) {
+                                labelDataPairs[propName].total += Math.abs(endOfHour.diff(start));
+                                start.add(1, 'hour').startOf('hour');
+                                endOfHour = start.clone().endOf("hour");
+                            } else {
+                                labelDataPairs[start.format(FORMAT)].total += Math.abs(stop.diff(start));
+                            }
+                        } else {
+                            start.add(1, 'hour').startOf('hour');
+                            endOfHour = start.clone().endOf("hour");
+                        }
+                    } while (stop.isAfter(endOfHour));
+                }
+            }
+
         }
 
 
@@ -221,6 +282,17 @@
         return buildChart(labels, data);
 
     };
+
+
+    const endOfOrStop = function (testMoment, boundryMoment, type) {
+        if (testMoment.isAfter(boundryMoment)) {
+            return boundryMoment;
+        } else {
+            return testMoment;
+        }
+
+
+    }
 
     const updateChartMonthsAsScale = function (results, chart) {
         const FORMAT = "MMMM";
@@ -242,9 +314,31 @@
 
         if (sessions && sessions.length > 0) {
             for (i = 0; i < sessions.length; i++) {
-                session = sessions[i];
-                var start = moment(session.start);
-                labelDataPairs[start.format(FORMAT)].total += session.stop - session.start
+                var session = sessions[i];
+                if (session.start && session.stop) {
+
+
+                    var endOfMonth = moment(session.start).endOf("month");
+                    var start = moment(session.start);
+                    var stop = moment(session.stop);
+
+                    do {
+                        var propName = start.format(FORMAT);
+                        if (labelDataPairs.hasOwnProperty(propName)) {
+                            if (endOfMonth.isBefore(stop)) {
+                                labelDataPairs[start.format(FORMAT)].total += Math.abs(endOfMonth.diff(start));
+                                start.add(1, 'month').startOf('month');
+                                endOfMonth = start.clone().endOf("month");
+                            } else {
+                                labelDataPairs[start.format(FORMAT)].total += Math.abs(stop.diff(start));
+                            }
+                        } else {
+                            start.add(1, 'month').startOf('month');
+                            endOfMonth = start.clone().endOf("month");
+                        }
+                    } while (stop.isAfter(endOfMonth));
+
+                }
             }
         }
 
@@ -300,7 +394,6 @@
         );
 
     };
-
 
     $(document).ready(function () {
         initialState();

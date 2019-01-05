@@ -108,8 +108,7 @@
                                         <div class="col-sm-10">
                                     <textarea
                                             class="form-control"
-                                            id="session-notes">{% if practice_session %}
-                                        {{ practice_session.notes | default("",True) }}{% endif %}</textarea>
+                                            id="session-notes">{% if practice_session %}{{ practice_session.notes | default("",True) }}{% endif %}</textarea>
                                         </div>
                                     </div>
                                     <div class="row">

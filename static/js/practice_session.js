@@ -13,7 +13,7 @@
                 data.stop = stop.toDate().getTime();
             }
 
-            data.notes = $("#session-notes").text();
+            data.notes = $("#session-notes").val();
             data.warmed_up = $("#warm-up").hasClass("active");
 
             if ($("#song-list").attr("dirty")) {
