@@ -81,47 +81,25 @@
         })
     };
 
+
     const pageHandlers = function () {
+        var quickRanges = function (id, duration) {
+            $("#" + id).on('change', function () {
+                hold = true;
+                updateDatesOnButtonClick(duration);
+                getData()
+                    .then(function (result) {
+                        updateChart(result);
+                        hold = false;
+                    });
+            });
 
+        };
 
-        $("#today").on('change', function () {
-            hold = true;
-            updateDatesOnButtonClick('day');
-            getData()
-                .then(function (result) {
-                    updateChart(result);
-                    hold = false;
-                });
-        });
-
-
-        $("#this-week").on('change', function () {
-            hold = true;
-            updateDatesOnButtonClick('week');
-            getData()
-                .then(function (result) {
-                    updateChart(result);
-                    hold = false;
-                });
-        });
-        $("#this-month").on('change', function () {
-            hold = true;
-            updateDatesOnButtonClick('month');
-            getData()
-                .then(function (result) {
-                    updateChart(result);
-                    hold = false;
-                });
-        });
-        $("#this-year").on('change', function () {
-            hold = true;
-            updateDatesOnButtonClick('year');
-            getData()
-                .then(function (result) {
-                    updateChart(result);
-                    hold = false;
-                });
-        });
+        quickRanges("today","day");
+        quickRanges("this-week","week");
+        quickRanges("this-month","month");
+        quickRanges("this-year","year");
 
 
         var startPicker = $('#session-start-picker');
@@ -166,19 +144,17 @@
 
     };
 
-    const updateChartDaysAsScale = function (results) {
-        const FORMAT = "dddd MMM DD YY"
-        var labels = [];
+    const updateChartWithScale = function (FORMAT, duration, results) {
         var labelDataPairs = {};
         var labels = [];
         var data = [];
-        var day = results.startMoment;
+        var rangeStart = results.startMoment;
 
-        while (day.isSameOrBefore(results.stopMoment, 'day')) {
-            var key = day.format(FORMAT);
+        while (rangeStart.isSameOrBefore(results.stopMoment, duration)) {
+            var key = rangeStart.format(FORMAT);
             labels.push(key);
-            labelDataPairs[key] = {day: day.clone(), total: 0};
-            day.add(1, "days")
+            labelDataPairs[key] = {total: 0};
+            rangeStart.add(1, duration)
         }
 
 
@@ -188,25 +164,25 @@
             for (i = 0; i < sessions.length; i++) {
                 var session = sessions[i];
                 if (session.start && session.stop) {
-                    var endOfDay = moment(session.start).endOf("day");
+                    var endOfRange = moment(session.start).endOf(duration);
                     var start = moment(session.start);
                     var stop = moment(session.stop);
 
                     do {
                         var propName = start.format(FORMAT);
                         if (labelDataPairs.hasOwnProperty(propName)) {
-                            if (endOfDay.isBefore(stop)) {
-                                labelDataPairs[start.format(FORMAT)].total += Math.abs(endOfDay.diff(start));
-                                start.add(1, 'day').startOf('day');
-                                endOfDay = start.clone().endOf("day");
+                            if (endOfRange.isBefore(stop)) {
+                                labelDataPairs[start.format(FORMAT)].total += Math.abs(endOfRange.diff(start));
+                                start.add(1, duration).startOf(duration);
+                                endOfRange = start.clone().endOf(duration);
                             } else {
                                 labelDataPairs[start.format(FORMAT)].total += Math.abs(stop.diff(start));
                             }
                         } else {
-                            start.add(1, 'day').startOf('day');
-                            endOfDay = start.clone().endOf("day");
+                            start.add(1, duration).startOf(duration);
+                            endOfRange = start.clone().endOf(duration);
                         }
-                    } while (stop.isAfter(endOfDay));
+                    } while (stop.isAfter(endOfRange));
                 }
             }
         }
@@ -217,139 +193,26 @@
             data.push(moment.duration(labelDataPairs[label].total).abs().asHours());
         }
 
+        DATA = data;
+        LABEL = labels;
+
         return buildChart(labels, data);
     };
 
+    const updateChartDaysAsScale = function (results) {
+        const FORMAT = "dddd MMM DD YY";
+        return updateChartWithScale(FORMAT, 'day', results)
+
+    };
 
     const updateChartHoursAsScale = function (results) {
         const FORMAT = "ddd DD HH:MM:SS"
-        var labels = [];
-        var labelDataPairs = {};
-        var labels = [];
-        var data = [];
-        var hour = results.startMoment;
-
-        while (hour.isSameOrBefore(results.stopMoment, 'hour')) {
-            console.log("Here");
-            var key = hour.format(FORMAT);
-            labels.push(key);
-            labelDataPairs[key] = {hour: hour.clone(), total: 0};
-            hour.add(1, "hour")
-        }
-
-
-        var sessions = results.results;
-
-        if (sessions && sessions.length > 0) {
-            for (i = 0; i < sessions.length; i++) {
-                var session = sessions[i];
-                var stackguard = 0;
-                if (session.start && session.stop) {
-                    var endOfHour = moment(session.start).endOf("hour");
-                    var start = moment(session.start);
-                    var stop = moment(session.stop);
-                    do {
-                        if (stackguard > 100) {
-                            break;
-                        }
-                        stackguard += 1;
-                        console.log(stackguard);
-                        var propName = start.format(FORMAT);
-                        if (labelDataPairs.hasOwnProperty(propName)) {
-                            if (endOfHour.isBefore(stop)) {
-                                labelDataPairs[propName].total += Math.abs(endOfHour.diff(start));
-                                start.add(1, 'hour').startOf('hour');
-                                endOfHour = start.clone().endOf("hour");
-                            } else {
-                                labelDataPairs[start.format(FORMAT)].total += Math.abs(stop.diff(start));
-                            }
-                        } else {
-                            start.add(1, 'hour').startOf('hour');
-                            endOfHour = start.clone().endOf("hour");
-                        }
-                    } while (stop.isAfter(endOfHour));
-                }
-            }
-
-        }
-
-
-        for (j = 0; j < labels.length; j++) {
-            var label = labels[j];
-            data.push(moment.duration(labelDataPairs[label].total).abs().asHours());
-        }
-
-        return buildChart(labels, data);
-
-    };
-
-
-    const endOfOrStop = function (testMoment, boundryMoment, type) {
-        if (testMoment.isAfter(boundryMoment)) {
-            return boundryMoment;
-        } else {
-            return testMoment;
-        }
-
-
+        return updateChartWithScale(FORMAT, 'hour', results);
     }
 
     const updateChartMonthsAsScale = function (results, chart) {
         const FORMAT = "MMMM";
-        var labels = [];
-        var labelDataPairs = {};
-        var labels = [];
-        var data = [];
-        var month = results.startMoment;
-
-        while (month.isSameOrBefore(results.stopMoment, 'month')) {
-            var key = month.format(FORMAT);
-            labels.push(key);
-            labelDataPairs[key] = {month: month.clone(), total: 0};
-            month.add(1, "month")
-        }
-
-
-        var sessions = results.results;
-
-        if (sessions && sessions.length > 0) {
-            for (i = 0; i < sessions.length; i++) {
-                var session = sessions[i];
-                if (session.start && session.stop) {
-
-
-                    var endOfMonth = moment(session.start).endOf("month");
-                    var start = moment(session.start);
-                    var stop = moment(session.stop);
-
-                    do {
-                        var propName = start.format(FORMAT);
-                        if (labelDataPairs.hasOwnProperty(propName)) {
-                            if (endOfMonth.isBefore(stop)) {
-                                labelDataPairs[start.format(FORMAT)].total += Math.abs(endOfMonth.diff(start));
-                                start.add(1, 'month').startOf('month');
-                                endOfMonth = start.clone().endOf("month");
-                            } else {
-                                labelDataPairs[start.format(FORMAT)].total += Math.abs(stop.diff(start));
-                            }
-                        } else {
-                            start.add(1, 'month').startOf('month');
-                            endOfMonth = start.clone().endOf("month");
-                        }
-                    } while (stop.isAfter(endOfMonth));
-
-                }
-            }
-        }
-
-
-        for (j = 0; j < labels.length; j++) {
-            var label = labels[j];
-            data.push(moment.duration(labelDataPairs[label].total).abs().asHours());
-        }
-
-        return buildChart(labels, data);
-
+        return updateChartWithScale(FORMAT, 'month', results);
     };
 
     const buildChart = function (labels, data) {
