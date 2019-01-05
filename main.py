@@ -4,10 +4,8 @@ from flask import Flask
 from flask import flash, redirect, render_template, request, session, url_for, jsonify
 
 from google.appengine.api import users
-from google.appengine.api import app_identity
 
 from utils import config
-from utils.Forms import LoginForm, PracticeSessionForm
 from utils import models
 
 app = Flask(__name__)
