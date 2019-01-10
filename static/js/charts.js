@@ -144,6 +144,7 @@
 
     };
 
+
     const updateChartWithScale = function (FORMAT, duration, results) {
         var labelDataPairs = {};
         var labels = [];
@@ -158,12 +159,15 @@
         }
 
 
+        RESULTS = results
         var sessions = results.results;
 
         if (sessions && sessions.length > 0) {
             for (i = 0; i < sessions.length; i++) {
                 var session = sessions[i];
+                console.log(session)
                 if (session.start && session.stop) {
+                    console.log(session)
                     var endOfRange = moment(session.start).endOf(duration);
                     var start = moment(session.start);
                     var stop = moment(session.stop);
@@ -171,13 +175,17 @@
                     do {
                         var propName = start.format(FORMAT);
                         if (labelDataPairs.hasOwnProperty(propName)) {
+                            console.log("start: " + labelDataPairs[start.format(FORMAT)].total)
                             if (endOfRange.isBefore(stop)) {
+                                console.log(start.format(FORMAT))
                                 labelDataPairs[start.format(FORMAT)].total += Math.abs(endOfRange.diff(start));
                                 start.add(1, duration).startOf(duration);
                                 endOfRange = start.clone().endOf(duration);
                             } else {
+                                console.log(start.format(FORMAT))
                                 labelDataPairs[start.format(FORMAT)].total += Math.abs(stop.diff(start));
                             }
+                             console.log("end: " + labelDataPairs[start.format(FORMAT)].total)
                         } else {
                             start.add(1, duration).startOf(duration);
                             endOfRange = start.clone().endOf(duration);
@@ -233,6 +241,7 @@
                         borderColor: "rgb(240,128,128)"
 
                     }],
+
                 },
                 options: {
                     scales: {
