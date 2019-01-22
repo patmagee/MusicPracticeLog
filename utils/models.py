@@ -14,6 +14,7 @@ class PracticeSession(ndb.Model):
     stop = ndb.IntegerProperty()
     notes = ndb.StringProperty()
     warmed_up = ndb.BooleanProperty()
+    is_lesson = ndb.BooleanProperty()
     songs = ndb.StringProperty(repeated=True)
 
     def complete(self):
@@ -78,13 +79,16 @@ def update_practice_session(data_update, practice_session):
     if "songs" in data_update:
         practice_session.songs = data_update["songs"]
 
+    if "is_lesson" in data_update:
+        practice_session.is_lesson = data_update["is_lesson"]
+
     practice_session.put()
 
     return practice_session
 
 
 def delete_practice_session(userId, key):
-    practice_session = get_practice_session(userId, key);
+    practice_session = get_practice_session(userId, key)
     if practice_session:
         session_key = ndb.Key(urlsafe=key)
         session_key.delete()

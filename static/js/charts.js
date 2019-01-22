@@ -96,10 +96,10 @@
 
         };
 
-        quickRanges("today","day");
-        quickRanges("this-week","week");
-        quickRanges("this-month","month");
-        quickRanges("this-year","year");
+        quickRanges("today", "day");
+        quickRanges("this-week", "week");
+        quickRanges("this-month", "month");
+        quickRanges("this-year", "year");
 
 
         var startPicker = $('#session-start-picker');
@@ -109,7 +109,7 @@
             if (!hold) {
                 getData()
                     .then(function (result) {
-                        updateChart(result)
+                        updateChart(result);
                         hold = false;
                     });
             }
@@ -117,10 +117,10 @@
 
         stopPicker.on('change.datetimepicker', function () {
             if (!hold) {
-                hold = true
+                hold = true;
                 getData()
                     .then(function (result) {
-                        updateChart(result)
+                        updateChart(result);
                         hold = false;
                     });
             }
@@ -144,59 +144,134 @@
 
     };
 
-    const updateChartWithScale = function (FORMAT, duration, results) {
-        var labelDataPairs = {};
-        var labels = [];
-        var data = [];
-        var rangeStart = results.startMoment;
 
-        while (rangeStart.isSameOrBefore(results.stopMoment, duration)) {
-            var key = rangeStart.format(FORMAT);
-            labels.push(key);
-            labelDataPairs[key] = {total: 0};
-            rangeStart.add(1, duration)
+    class DateRange {
+
+        constructor(startMoment, endMoment, duration, FORMAT) {
+            this.duration = duration;
+            this.FORMAT = FORMAT;
+            this.originalStart = startMoment.clone();
+            this.originalEnd = endMoment.clone();
+
+            this.buildRanges();
         }
+    }
+
+    DateRange.prototype.buildRanges = function () {
+        this.bins = [];
+        var order = 0;
+        var rangeStart = this.originalStart.clone();
+        rangeStart.startOf(this.duration);
+
+        var rangeStop = this.originalEnd.clone();
+        rangeStop.endOf(this.duration);
+
+        while (rangeStart.isSameOrBefore(rangeStop, this.duration)) {
+            var label = rangeStart.format(this.FORMAT);
+
+            var bin = {
+                order: order,
+                label: label,
+                total: 0,
+                start: rangeStart.clone()
+            };
+
+            rangeStart.add(1, this.duration);
+            bin["stop"] = rangeStart.clone();
+            order += 1;
+            this.bins.push(bin);
+        }
+    };
+
+    DateRange.prototype.addSessionToBin = function (session) {
+        if (session.start && session.stop) {
+            var endOfRange = moment(session.start);
+            endOfRange = endOfRange.endOf(this.duration);
+            var startMoment = moment(session.start);
+            var stopMoment = moment(session.stop);
 
 
-        var sessions = results.results;
+            if (startMoment.isBefore(this.originalStart)) {
+                startMoment = this.originalStart.clone();
+                endOfRange = startMoment.clone();
+                endOfRange.endOf(this.duration)
+            }
 
-        if (sessions && sessions.length > 0) {
-            for (i = 0; i < sessions.length; i++) {
-                var session = sessions[i];
-                if (session.start && session.stop) {
-                    var endOfRange = moment(session.start).endOf(duration);
-                    var start = moment(session.start);
-                    var stop = moment(session.stop);
 
-                    do {
-                        var propName = start.format(FORMAT);
-                        if (labelDataPairs.hasOwnProperty(propName)) {
-                            if (endOfRange.isBefore(stop)) {
-                                labelDataPairs[start.format(FORMAT)].total += Math.abs(endOfRange.diff(start));
-                                start.add(1, duration).startOf(duration);
-                                endOfRange = start.clone().endOf(duration);
-                            } else {
-                                labelDataPairs[start.format(FORMAT)].total += Math.abs(stop.diff(start));
-                            }
-                        } else {
-                            start.add(1, duration).startOf(duration);
-                            endOfRange = start.clone().endOf(duration);
-                        }
-                    } while (stop.isAfter(endOfRange));
+            var count = 0;
+            do {
+                var bin = this.findBin(startMoment);
+                if (bin) {
+                    if (bin.stop.isSameOrAfter(stopMoment)) {
+                        bin.total += Math.abs(stopMoment.diff(startMoment));
+                        return;
+                    } else {
+                        bin.total += Math.abs(endOfRange.diff(startMoment));
+                        startMoment.add(1, this.duration);
+                        startMoment.startOf(this.duration);
+                        endOfRange = startMoment.clone();
+                    }
+                } else {
+                    startMoment.add(1, this.duration);
+                    startMoment.startOf(this.duration);
+                    endOfRange = startMoment.clone();
                 }
+                count += 1;
+            }
+            while (endOfRange.isBefore(stopMoment) && count < 10)
+        }
+    };
+
+
+    DateRange.prototype.findBin = function (startMoment) {
+
+        for (var i = 0; i < this.bins.length; i++) {
+            var bin = this.bins[i];
+            if (startMoment.isSameOrAfter(bin.start) && startMoment.isBefore(bin.stop)) {
+                return bin;
             }
         }
+    };
 
 
-        for (j = 0; j < labels.length; j++) {
-            var label = labels[j];
-            data.push(moment.duration(labelDataPairs[label].total).abs().asHours());
+    DateRange.prototype.getLabels = function () {
+        var labels = [];
+        for (var i = 0; i < this.bins.length; i++) {
+            labels.push(this.bins[i].label);
+        }
+        return labels;
+
+    };
+
+    DateRange.prototype.getData = function () {
+        var data = [];
+        for (var i = 0; i < this.bins.length; i++) {
+            data.push(moment.duration(this.bins[i].total).abs().asMinutes());
+        }
+        return data;
+    };
+
+    DateRange.prototype.getSum = function () {
+        var sum = 0;
+        for (var i = 0; i < this.bins.length; i++) {
+            sum += Math.abs(this.bins[i].total);
         }
 
-        DATA = data;
-        LABEL = labels;
+        return moment.duration(sum).abs().asMinutes();
+    };
 
-        return buildChart(labels, data);
+
+    const updateChartWithScale = function (FORMAT, duration, results) {
+        var dateRange = new DateRange(results.startMoment, results.stopMoment, duration, FORMAT);
+        var sessions = results.results;
+        if (sessions && sessions.length > 0) {
+            for (var i = 0; i < sessions.length; i++) {
+                var session = sessions[i];
+                dateRange.addSessionToBin(session);
+            }
+        }
+        $("#totaltime").text(Math.round(dateRange.getSum()) + " min");
+        return buildChart(dateRange.getLabels(), dateRange.getData());
     };
 
     const updateChartDaysAsScale = function (results) {
@@ -206,9 +281,9 @@
     };
 
     const updateChartHoursAsScale = function (results) {
-        const FORMAT = "ddd DD HH:MM:SS"
+        const FORMAT = "hh:mm A";
         return updateChartWithScale(FORMAT, 'hour', results);
-    }
+    };
 
     const updateChartMonthsAsScale = function (results, chart) {
         const FORMAT = "MMMM";
@@ -220,7 +295,7 @@
             CHART.destroy();
         }
         $("#data-chart-container").children("canvas").remove();
-        var html = '<canvas id="data-chart" height="100%" width="100%"></canvas>'
+        var html = '<canvas id="data-chart" height="100%" width="100%"></canvas>';
         $("#data-chart-container").append(html);
         var ctx = document.getElementById("data-chart").getContext('2d');
         CHART = new Chart(ctx, {
@@ -233,6 +308,7 @@
                         borderColor: "rgb(240,128,128)"
 
                     }],
+
                 },
                 options: {
                     scales: {
