@@ -19,10 +19,11 @@
 
         var startMoment = startPicker.datetimepicker('date');
         var stopMoment = stopPicker.datetimepicker('date');
+
         var data = {
             start: startMoment.toDate().getTime(),
             stop: stopMoment.toDate().getTime()
-        }
+        };
 
         return $.ajax({
             url: "/sessions",
@@ -157,6 +158,7 @@
         }
     }
 
+
     DateRange.prototype.buildRanges = function () {
         this.bins = [];
         var order = 0;
@@ -246,7 +248,7 @@
     DateRange.prototype.getData = function () {
         var data = [];
         for (var i = 0; i < this.bins.length; i++) {
-            data.push(moment.duration(this.bins[i].total).abs().asMinutes());
+            data.push(this.bins[i].total);
         }
         return data;
     };
@@ -257,11 +259,13 @@
             sum += Math.abs(this.bins[i].total);
         }
 
-        return moment.duration(sum).abs().asMinutes();
+        return sum;
+
+
     };
 
 
-    const updateChartWithScale = function (FORMAT, duration, results) {
+    function updateChartWithScale(FORMAT, duration, results) {
         var dateRange = new DateRange(results.startMoment, results.stopMoment, duration, FORMAT);
         var sessions = results.results;
         if (sessions && sessions.length > 0) {
@@ -270,12 +274,35 @@
                 dateRange.addSessionToBin(session);
             }
         }
-        $("#totaltime").text(Math.round(dateRange.getSum()) + " min");
+
+        setTotalTime(dateRange.getSum());
         return buildChart(dateRange.getLabels(), dateRange.getData());
     };
 
+    function setTotalTime(totalMs) {
+        var duration = moment.duration(totalMs);
+        var minutes = (Math.floor(duration.asMinutes()) % 60);
+        var hours = Math.floor(duration.asHours());
+
+
+        var timeString = "";
+        if (hours > 0 && hours < 2) {
+            timeString += hours + " hour "
+        } else {
+            timeString += hours + " hours "
+        }
+
+        if (minutes === 1) {
+            timeString += minutes + " minute";
+        } else {
+            timeString += minutes + " minutes";
+        }
+
+        $("#totaltime").text(timeString);
+    }
+
     const updateChartDaysAsScale = function (results) {
-        const FORMAT = "dddd MMM DD YY";
+        const FORMAT = "dd MMM DD - YYYY";
         return updateChartWithScale(FORMAT, 'day', results)
 
     };
@@ -286,11 +313,31 @@
     };
 
     const updateChartMonthsAsScale = function (results, chart) {
-        const FORMAT = "MMMM";
+        const FORMAT = "MMMM - YYYY";
         return updateChartWithScale(FORMAT, 'month', results);
     };
 
     const buildChart = function (labels, data) {
+        var hourMillis = 60 * 60 * 1000;
+        var minute = 60 * 1000;
+        var maxValue = Math.max(...data);
+        //default stepsize is 10 minutes
+        var stepSize;
+        var hours = Math.ceil(moment.duration(maxValue).asHours());
+        if (hours === 0) {
+            stepSize = undefined;
+        } else if (hours <= 1) {
+            stepSize = minute * 5;
+        } else if (hours > 1 && hours <= 4) {
+            stepSize = minute * 20
+        } else if (hours > 5 && hours <= 10) {
+            stepSize = minute * 30;
+        } else if (hours > 10 && hours <= 20) {
+            stepSize = hourMillis;
+        } else {
+            stepSize = Math.floor(Math.ceil(hours / 20)) * hourMillis
+        }
+
         if (CHART) {
             CHART.destroy();
         }
@@ -306,7 +353,6 @@
                         label: "Hours of Play",
                         data: data,
                         borderColor: "rgb(240,128,128)"
-
                     }],
 
                 },
@@ -314,7 +360,16 @@
                     scales: {
                         yAxes: [{
                             ticks: {
-                                beginAtZero: true
+                                callback: (v) => {
+                                    var duration = moment.duration(v);
+                                    var hours = "" + Math.floor(duration.asHours());
+                                    var minutes = "" + (Math.floor(duration.asMinutes()) % 60);
+
+                                    return hours.padStart(2, "0") + ":" + minutes.padStart(2, "0");
+                                },
+                                stepSize: stepSize,
+                                beginAtZero: true,
+
                             }
                         }],
                         xAxes: [{
@@ -322,9 +377,20 @@
                                 autoSkip: true,
                                 maxTicksLimit: 12,
                                 maxRotation: 90,
-                                minRotation: 90
+                                minRotation: 75
                             }
                         }]
+                    },
+                    tooltips: {
+                        callbacks: {
+                            label: function (tooltipItem, data) {
+                                var duration = moment.duration(parseInt(tooltipItem.yLabel));
+                                var hours = "" + Math.floor(duration.asHours());
+                                var minutes = "" + (Math.floor(duration.asMinutes()) % 60);
+                                return data.datasets[tooltipItem.datasetIndex].label + ": " + hours.padStart(2, "0") + ":" + minutes.padStart(2, "0")
+
+                            }
+                        }
                     }
                 }
 
