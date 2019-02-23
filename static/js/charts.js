@@ -199,9 +199,10 @@
                 endOfRange.endOf(this.duration)
             }
 
-
             var count = 0;
             do {
+                endOfRange = startMoment.clone();
+                endOfRange.endOf(this.duration);
                 var bin = this.findBin(startMoment);
                 if (bin) {
                     if (bin.stop.isSameOrAfter(stopMoment)) {
@@ -209,9 +210,9 @@
                         return;
                     } else {
                         bin.total += Math.abs(endOfRange.diff(startMoment));
+                        startMoment = endOfRange.clone();
                         startMoment.add(1, this.duration);
                         startMoment.startOf(this.duration);
-                        endOfRange = startMoment.clone();
                     }
                 } else {
                     startMoment.add(1, this.duration);
@@ -220,13 +221,12 @@
                 }
                 count += 1;
             }
-            while (endOfRange.isBefore(stopMoment) && count < 10)
+            while (endOfRange.isBefore(stopMoment))
         }
     };
 
 
     DateRange.prototype.findBin = function (startMoment) {
-
         for (var i = 0; i < this.bins.length; i++) {
             var bin = this.bins[i];
             if (startMoment.isSameOrAfter(bin.start) && startMoment.isBefore(bin.stop)) {
