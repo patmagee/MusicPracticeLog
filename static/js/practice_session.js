@@ -15,6 +15,7 @@
 
             data.notes = $("#session-notes").val();
             data.warmed_up = $("#warm-up").hasClass("active");
+            data.is_lesson = $("#is-lesson").hasClass("active");
 
             if ($("#song-list").attr("dirty")) {
                 songs = [];
@@ -28,6 +29,71 @@
 
         };
 
+        const songButtonHandler = function () {
+            let songName = $("#add-song").val();
+            if (songName) {
+                $("#add-song").val(null);
+                let html = `
+                            <li class="list-group-item ">
+                               ${ songName }
+                                <span style="float:right">
+                                    <a class="delete-song" href="#"><i class="fas fa-times"></i></a>
+                                </span>
+                            </li>
+                            `;
+                $("#song-list").append(html)
+                $("#song-list").attr("dirty", true)
+            }
+        };
+
+        const songDeleteHander = function (event) {
+            event.preventDefault();
+            $(this).parents("li").remove();
+        };
+
+        const warmUpButtonHandler = function () {
+            $(this).addClass("active");
+            $(this).attr("aria-pressed", true)
+        };
+
+
+        const enableFields = function () {
+            $("#session-start").removeAttr("disabled");
+            $("#session-stop").removeAttr("disabled");
+            $("#add-song").removeAttr("disabled");
+            $("#add-song-button").on("click", songButtonHandler);
+            $(".delete-song").show();
+            $("#song-list").on("click", ".delete-song", songDeleteHander);
+            $("#session-notes").removeAttr("disabled").show();
+            $("#session-notes-p").hide();
+        };
+
+        const disableFields = function () {
+            $("#session-start").attr("disabled", "disabled");
+            $("#session-stop").attr("disabled", "disabled");
+            $("#add-song").attr("disabled", "disabled");
+            $("#add-song-button").off("click");
+            $(".delete-song").hide();
+            $("#song-list").off("click", ".delete-song");
+            $("#session-notes").attr("disabled", "disabled").hide();
+            $("#session-notes-p").show().text($("#session-notes").val());
+        }
+
+        const enableEditing = function () {
+            enableFields();
+
+            $("#session-edit").hide();
+            $("#session-update").show();
+            $("#session-cancel").show();
+        };
+
+        const disableEditing = function () {
+            disableFields();
+
+            $("#session-edit").show();
+            $("#session-update").hide();
+            $("#session-cancel").hide();
+        };
 
         const updateTime = function () {
             let header = $("#sessiontime");
@@ -98,28 +164,6 @@
                 updateTime();
             });
 
-            $("#add-song-button").click(function () {
-                let songName = $("#add-song").val();
-                if (songName) {
-                    $("#add-song").val(null);
-                    let html = `
-                            <li class="list-group-item ">
-                               ${ songName }
-                                <span style="float:right">
-                                    <a class="delete-song" href="#"><i class="fas fa-times"></i></a>
-                                </span>
-                            </li>
-                            `;
-                    $("#song-list").append(html)
-                    $("#song-list").attr("dirty", true)
-                }
-            });
-
-            $("#song-list").on("click", ".delete-song", function (event) {
-                event.preventDefault();
-                $(this).parents("li").remove();
-            });
-
         };
 
         const updateHandlers = function () {
@@ -158,6 +202,7 @@
                     dataType: "json"
                 }).done(function (response) {
                     alertMessage("Successfully updated practice", "success");
+                    disableEditing();
                 });
             });
 
@@ -174,9 +219,15 @@
                     window.location = "/sessions";
                 });
             });
+
+            $("#session-edit").click(enableEditing);
+            $("#warm-up").off("click", function (event) {
+                event.preventDefault();
+            })
         };
 
         const createHandlers = function () {
+            enableFields();
             $("#session-create").click(function () {
                 let data = parseData();
 

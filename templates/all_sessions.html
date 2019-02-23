@@ -17,25 +17,30 @@
                     <table class="table table-hover">
                         <thead class="thead-dark">
                         <tr>
-                            <th style="width: 33.33%" class="col">Start</th>
-                            <th style="width: 33.33%" class="col">Stop</th>
-                            <th style="width: 33.33%" class="col">Total Time</th>
+                            <th style="width: 10%" class="col">Lesson</th>
+                            <th style="width: 30.00%" class="col">Start</th>
+                            <th style="width: 30%" class="col">Stop</th>
+                            <th style="width: 30%" class="col">Total Time</th>
                         </tr>
                         </thead>
                         <tbody>
                         {% for practice_session in practice_sessions %}
                             <tr class="practice-session-row" data-id="{{ practice_session.id }}">
-                                <td style="width: 33.33%" class="practice-session-start"
+                                <td style="width: 10%"
+                                >{% if practice_session.is_lesson %}<span><i class="fas fa-check"></i></span>{% endif %}
+                                </td>
+                                <td style="width: 30%" class="practice-session-start"
                                     data-start="{{ practice_session.start }}"></td>
-                                <td style="width: 33.33%" class="practice-session-stop"
+                                <td style="width: 30%" class="practice-session-stop"
                                     data-stop="{{ practice_session.stop|default(0,true) }}"></td>
-                                <td style="width: 33.33%" class="practice-session-diff"></td>
+                                <td style="width: 30%" class="practice-session-diff"></td>
                             </tr>
                         {% endfor %}
                         </tbody>
                     </table>
                 {% else %}
-                    <a style="margin-top: 20%" class="btn btn-outline-dark btn-xlg" href="/sessions/add" role="button">Add Practice</a>
+                    <a style="margin-top: 20%" class="btn btn-outline-dark btn-xlg" href="/sessions/add" role="button">Add
+                        Practice</a>
                 {% endif %}
 
             </div>
